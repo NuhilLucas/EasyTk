@@ -1,0 +1,7 @@
+# exclude
+__pycache__
+tests/*
+
+# include
+!tests/CreateTests.py
+!tests/Example.py
