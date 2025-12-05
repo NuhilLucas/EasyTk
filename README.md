@@ -42,6 +42,8 @@ pip install EasyTk
 - **Python**: 3.12 或更高版本
 - **依赖项**: Pillow >= 11.3.0
 
+---
+
 ## 🎮 快速入门
 
 ### 基础窗口创建 - 只需 3 行代码！
@@ -86,7 +88,6 @@ class HomePage(ezFrame):
 # 创建主窗口
 app = ezTk("多框架应用示例")
 app.Geometry.Size(1000, 700)
-app.Geometry.Center()  # 窗口居中显示
 
 # 创建框架管理器
 frame_manager = ezFrameManager(app)
@@ -100,131 +101,146 @@ frame_manager.AddFrame([
 app.Run()
 ```
 
-### 智能消息对话框
+---
+
+## 📚 EasyTk 核心组件详解
+
+### 概述
+
+EasyTk 是一个基于 tkinter 的 Python GUI 框架，旨在简化桌面应用程序的开发。其核心组件提供了窗口管理、框架系统和消息框功能，让开发者能够更高效地构建复杂的用户界面。
+### 1. ezTk 窗口管理器
+
+#### 核心功能
+
+[`ezTk`](src/EasyTk/ezTk.py#L7) 类是整个框架的窗口管理核心，继承自 `tkinter.Tk`：
 
 ```python
-from EasyTk import MsgBox
-
-# 信息提示
-MsgBox(mode="info", 
-       title="🎉 操作成功", 
-       message="文件已成功保存！")
-
-# 确认对话框
-if MsgBox(mode="query", 
-          title="⚠️ 确认操作",
-          message="确定要删除这个项目吗？") == "yes":
-    print("用户确认删除")
-    
-# 警告消息
-MsgBox(mode="warn",
-       title="⚠️ 警告",
-       message="磁盘空间不足！")
+class ezTk(Tk):
+    def __init__(self, title: str = "Window"):
+        super().__init__()
+        self.wm_title(title)
+        self.protocol("WM_DELETE_WINDOW", lambda: self.Exit("All"))
+        self.Geometry: ezTk_Geometry = ezTk_Geometry(self)
 ```
 
-## 📚 核心组件详解
+#### 特性亮点
 
-### 🪟 ezTk - 智能窗口管理
+1. **自动窗口关闭处理**：通过 [`protocol("WM_DELETE_WINDOW")`](src/EasyTk/ezTk.py#L11) 统一处理窗口关闭事件
+2. **几何管理封装**：[`ezTk_Geometry`](src/EasyTk/ezTk.py#L26) 类提供简洁的窗口尺寸和位置控制
+
+##### 几何管理API
+
+[`ezTk_Geometry`](src/EasyTk/ezTk.py#L26) 类提供了四个主要方法：
+
+- **`Pos(x, y, update)`**：控制窗口位置，支持相对坐标设置
+- **`Size(width, height, update)`**：设置窗口尺寸
+- **`SizeFix(width, height)`**：固定窗口大小
+- **`SizeLimit(mode, width, height)`**：设置最小/最大尺寸限制
+
+### 2. ezFrame 框架架构
+
+#### 抽象基类设计
+
+[`ezFrame`](src/EasyTk/ezFrame.py#L10) 是一个抽象基类，采用模板方法模式：
 
 ```python
-app = ezTk("我的应用", theme="dark")  # 支持深色主题
-
-# 几何管理
-app.Geometry.Size(1280, 720)      # 设置窗口大小
-app.Geometry.Pos(100, 100)        # 设置窗口位置
-app.Geometry.Center()              # 窗口居中
-app.Geometry.SizeLimit("min", 400, 300)  # 设置最小尺寸
-app.Geometry.SizeFix(False, True)  # 允许水平调整，禁止垂直调整
-
-# 窗口行为
-app.SetIcon("icon.ico")  # 设置窗口图标
-app.OnClose(callback)    # 设置关闭回调
-```
-
-### 🧩 ezFrame - 模块化框架系统
-
-```python
-class SettingsPage(ezFrame):
-    """设置页面框架"""
+class ezFrame(ABC):
+    def __init__(self, master: ezFrameManager = None, name: str = "ezFrame", **kwargs):
+        self.master = master
+        self.name = name
+        self.kwargs = kwargs
+        self.Frame = None
     
-    def __init__(self, master, name, config):
-        super().__init__(master, name)
-        self.config = config  # 自定义参数
-    
+    @abstractmethod
     def UIInit(self):
-        self.Frame = Frame(master=self.master, bg="white")
-        
-        # 构建你的 UI 组件
-        Label(self.Frame, text="设置面板", font=("Arial", 16)).pack()
-        # ... 更多组件
-    
-    def DoPlace(self):
-        self.Frame.pack(fill="both", expand=True)
-    
-    def OtherHook(self):
-        # 额外的初始化逻辑
-        print(f"框架 {self.name} 已初始化")
+        """必须在子类中实现，用于初始化UI组件"""
+        pass
 ```
 
-### 🔄 ezFrameManager - 框架管理器
+#### 钩子方法体系
+
+提供了三个生命周期钩子：
+
+1. **[`UIInit()`](src/EasyTk/ezFrame.py#L22)**：必需的抽象方法，初始化UI组件
+2. **[`DoPlace()`](src/EasyTk/ezFrame.py#L28)**：可选的布局方法
+3. **[`OtherHook()`](src/EasyTk/ezFrame.py#L31)**：自定义扩展钩子
+
+#### 绘制流程
+
+[`draw()`](src/EasyTk/ezFrame.py#L34) 方法按顺序执行三个钩子，确保组件正确渲染。
+
+### 3. ezFrameManager 框架管理系统
+
+#### 双模式切换机制
+
+[`ezFrameManager`](src/EasyTk/ezFrame.py#L85) 支持两种框架切换模式：
 
 ```python
-# 创建管理器
-manager = ezFrameManager(app)
-
-# 配置管理器
-manager.SwitchMode("redraw")  # 切换模式：redraw 或 tkraise
-manager.frames_persisted = ["sidebar", "header"]  # 持久化框架
-
-# 添加多个框架
-frames = [
-    HomePage(master=manager, name="home"),
-    SettingsPage(master=manager, name="settings"),
-    AboutPage(master=manager, name="about")
-]
-
-manager.AddFrame(frames, initial_frame="home")
-
-# 切换框架
-manager.Switch("settings")  # 切换到设置页面
+self._SwitchMode_: Literal["tkraise", "redraw"] = "tkraise"
 ```
 
-### 📢 MsgBox - 优雅的消息系统
+- **tkraise 模式**：所有框架预先绘制，通过 `tkraise()` 方法切换显示
+- **redraw 模式**：按需绘制框架，切换时销毁旧框架并绘制新框架
+
+#### 框架列表管理
+
+[`ezFrameList`](src/EasyTk/ezFrame.py#L40) 类提供了灵活的框架索引管理：
+
+- **双索引系统**：同时支持名称索引和数字索引
+- **便捷访问**：支持 `[0]` 访问第一个，`[1]` 访问最后一个
+- **迭代器支持**：可遍历所有框架
+
+#### 持久化框架
+
+[`frames_persisted`](src/EasyTk/ezFrame.py#L102) 列表维护常驻内存的框架，在切换模式下不会被销毁。
+
+### 4. ezMsgBox 消息框系统
+
+#### 类型安全设计
+
+[`ezMsgBox`](src/EasyTk/ezMsgBox.py#L44) 使用 Literal 类型确保参数类型安全：
 
 ```python
-from EasyTk import MsgBox
-
-# 多种消息类型
-MsgBox.info("操作成功", "文件已保存")
-MsgBox.warn("警告", "磁盘空间不足")
-MsgBox.error("错误", "无法连接到服务器")
-
-# 自定义对话框
-result = MsgBox(
-    mode="query",
-    title="确认删除",
-    message="确定要永久删除此文件吗？",
-    buttons={"yes": "确定删除", "no": "取消"},
-    default_button="no"
-)
-
-if result == "yes":
-    # 执行删除操作
-    pass
+ICONS = Literal["error", "info", "question", "warning"]
+TYPES = Literal["abortretryignore", "ok", "okcancel", "retrycancel", "yesno", "yesnocancel"]
+REPLIES = Literal["abort", "retry", "ignore", "ok", "cancel", "yes", "no"]
 ```
 
-## 🎨 示例应用展示
+#### 预设模式
 
-我们提供了一个完整的示例应用，展示了 EasyTk 的所有特性：
+提供四种预设模式：
 
-```bash
-# 克隆仓库
-git clone https://github.com/NuhilLucas/EasyTk.git
+- **info**：信息提示（info图标 + OK按钮）
+- **warn**：警告提示（warning图标 + OK按钮）  
+- **error**：错误提示（error图标 + OK按钮）
+- **query**：询问提示（question图标 + YESNO按钮）
 
-# 运行示例
-cd EasyTk/example
-python main.py
-```
+#### 临时根窗口管理
+
+使用 [`get_temp_root()`](src/EasyTk/ezMsgBox.py#L8) 和 [`destroy_temp_root()`](src/EasyTk/ezMsgBox.py#L32) 自动管理临时Tk实例，避免根窗口冲突。
+
+### 核心设计模式
+
+#### 1. 模板方法模式
+`ezFrame` 通过抽象的 `UIInit()` 方法定义了框架创建的标准流程。
+
+#### 2. 策略模式  
+`ezFrameManager` 的两种切换模式体现了策略模式，允许运行时选择不同的渲染策略。
+
+#### 3. 工厂方法模式
+`ezMsgBox` 的预设模式提供了便捷的消息框创建方式。
+
+#### 4. 组合模式
+`ezFrameList` 将多个框架统一管理，提供了类似集合的接口。
+
+### 使用建议
+
+1. **简单应用**：直接使用 `ezTk` + 传统tkinter组件
+2. **多页面应用**：结合 `ezFrameManager` 和 `ezFrame` 实现页面切换
+3. **模态对话框**：使用 `ezMsgBox` 处理用户交互反馈
+4. **复杂布局**：继承 `ezFrame` 创建可复用的UI组件
+
+通过这些核心组件，EasyTk 提供了一套完整的桌面应用开发解决方案，既保持了 tkinter 的灵活性，又提供了更高级的抽象和更便捷的API。
 
 ### 示例特性
 - ✅ 现代化深色主题界面
@@ -232,6 +248,8 @@ python main.py
 - ✅ 响应式布局设计
 - ✅ 配置面板演示
 - ✅ 实时状态显示
+
+---
 
 ## 📁 项目结构
 
@@ -300,3 +318,4 @@ pytest tests/
 [![Star History Chart](https://api.star-history.com/svg?repos=NuhilLucas/EasyTk&type=Date)](https://star-history.com/#NuhilLucas/EasyTk&Date)
 
 ---
+
