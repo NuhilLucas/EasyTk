@@ -59,7 +59,7 @@ class Frame_Home(ezFrame):
         self.Frame = Frame(master=self.master, name=self.name, bg="#2D2D2D")
         self.Frame.pack_propagate(False)
         
-        Path_Img: str = "./Logo.jpeg"
+        Path_Img: str = "./Logo.png"
 
         # 居中容器(整体略偏上)
         Frame_Center = Frame(self.Frame, bg="#2D2D2D")
@@ -95,7 +95,7 @@ class Frame_Home(ezFrame):
         # === 标题与简介 ===
         Label(
             Frame_Center,
-            text="生产数据处理工具集",
+            text="Example Application",
             font=("Microsoft YaHei", 25, "bold"),
             bg="#2D2D2D",
             fg="#FFFFFF"
@@ -109,17 +109,27 @@ class Frame_Home(ezFrame):
             fg="#A0A0A0"
         ).pack(pady=(0, 0))
 
+        self.geomsync()
+
     def DoPlace(self):
         self.Frame.pack(side="right", fill="both", expand=True)
 
-    def SyncPosNSize(self):
-        # 下面两个Sync根据需求二选一即可
-
+    def geomsync(self):
         # 初始化之后给其他框架同步尺寸[仅在初始化时执行]
         # self.Frame.bind("<Map>", lambda _: (self.Frame.unbind("<Map>"), self.master.Refresh(True)))
 
-        # 窗口尺寸变化时给其他框架同步尺寸[只要窗口尺寸变化就执行]
-        self.Frame.bind("<Configure>", lambda _: self.master.Refresh(True))
+        # Frame_Home 尺寸变化时给当前激活框架同步尺寸[只要窗口尺寸变化就执行]
+        self.frames_geomsync: set = {}
+        def _syncfunc_(_):
+            match self.master._SwitchMode_:
+                case "redraw":
+                    for frame_name in self.frames_geomsync:
+                        if frame_name in self.master.frames_persisted or frame_name == self.master.frame_activated: self.master[frame_name].DoPlace()
+                case "tkraise":
+                    for frame_name in self.frames_geomsync:
+                        self.master[frame_name].DoPlace()
+
+        self.Frame.bind("<Configure>", _syncfunc_)
 
     @property
     def Pos(self):
@@ -324,26 +334,36 @@ class Frame_1(ezFrame):
         self.Frame.configure(width=size[0], height=size[1])
         self.Frame.place(x=pos[0], y=pos[1])
 
-# 创建主窗口
-root = ezTk("ezTk 测试")
-# root.geometry("1280x768")
-root.Geometry.Size(1280, 768)
-root.Geometry.SizeLimit("min", 1024, 600)
-# root.Geometry.SizeFix(True, True)
+class Frame_2(ezFrame):
+    def UIInit(self):
+        self.Frame: Frame = Frame(master=self.master, name=self.name, bg="#448169")
+        self.Frame.pack_propagate(False)
 
-# 创建框架管理器
-FrameManager = ezFrameManager(root)
-FrameManager.SwitchMode("redraw")
-FrameManager.Frames_Persisted += ["frame_LeftBar", "frame_Home"]
-for zFrame in [
-    Frame_LeftBar(master=FrameManager, name="frame_LeftBar"),
-    Frame_Home(master=FrameManager, name="frame_Home"),
-    Frame_Config(master=FrameManager, name="frame_Config"),
-    Frame_1(master=FrameManager, name="frame_1")
-]:
-    FrameManager.AddFrame(zFrame)
-FrameManager["frame_Home"].SyncPosNSize()
-# FrameManager["frame_Home"].ResizeLogo()
+        Label(self.Frame, text="这是 Frame 2", font=("Arial", 16), bg="#448169").pack(pady=20)
+        Button(self.Frame, text="切换到 Frame 1", command=lambda: self.master.Switch("frame_1")).pack(pady=10)
+    
+    def DoPlace(self):
+        pos: tuple[int, int] = self.master["frame_Home"].Pos
+        size: tuple[int, int] = self.master["frame_Home"].Size
+        self.Frame.configure(width=size[0], height=size[1])
+        self.Frame.place(x=pos[0], y=pos[1])
 
-# 运行测试
-root.mainloop()
+if __name__ == "__main__":
+    Root = ezTk("ezTk 测试")
+    Root.Geometry.Size(1280, 768)
+    Root.Geometry.SizeLimit("min", 1024, 600)
+    # Root.Geometry.SizeFix(True, True)
+
+    FrameManager = ezFrameManager(Root)
+    FrameManager.SwitchMode("redraw")
+    FrameManager.frames_persisted = ["frame_LeftBar", "frame_Home", "frame_Config"]
+    FrameManager.AddFrame([
+        Frame_LeftBar(master=FrameManager, name="frame_LeftBar"),
+        Frame_Home(master=FrameManager, name="frame_Home"),
+        Frame_Config(master=FrameManager, name="frame_Config"),
+        Frame_1(master=FrameManager, name="frame_1"),
+        Frame_2(master=FrameManager, name="frame_2")
+    ], "frame_Home")
+    FrameManager["frame_Home"].frames_geomsync = {"frame_Config", "frame_1", "frame_2"}
+
+    Root.mainloop()

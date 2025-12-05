@@ -1,3 +1,8 @@
 {
-    "commentTranslate.source": "Google"
+    "commentTranslate.source": "Google",
+    "explorer.fileNesting.enabled": true,
+    "explorer.fileNesting.patterns": {
+        "pyproject.toml": "poetry.lock",
+        "README.md": "TODO.md"
+    }
 }

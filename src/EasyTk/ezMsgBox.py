@@ -116,7 +116,8 @@ def MsgBox(
     result = "NoResult"
     try:
         result = master.tk.call("tk_messageBox", *master._options(_options))
-    finally: destroy_temp_root(master)
+    finally:
+        destroy_temp_root(master)
 
     return result
 
