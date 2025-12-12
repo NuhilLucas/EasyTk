@@ -272,17 +272,9 @@ class ezFrameHub(tkFrame):
         frames_name: Iterable[str] = (frames,) if isinstance(frames, str) else frames
         
         is_redraw: bool = (self.switch_mode == "redraw")
-        last_frame: ezFrame = None
         for frame_name in frames_name:
             if not frame_name in self.frame_reg: continue
-            last_frame = self.frame_reg.persist(frame_name)
-            if is_redraw: last_frame.draw()
-
-        if not self.frame_reg.activated is None:
-            self.frame_reg[self.frame_reg.activated].tkraise()
-        elif not last_frame is None:
-            last_frame.tkraise()
-            self.frame_reg.activate(last_frame.name)
+            if is_redraw and not self.frame_reg.activated == frame_name: self.frame_reg.unpersist(frame_name).destroy()
 
 if __name__ == "__main__":
     from EasyTk import ezTk
