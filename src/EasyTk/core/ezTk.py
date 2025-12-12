@@ -1,5 +1,5 @@
 from tkinter import Tk, Event as TkEvent
-from typing import Literal, Callable, Any
+from typing import Literal
 
 class ezTk(Tk):
     """
@@ -17,7 +17,7 @@ class ezTk(Tk):
     def Run(self):
         self.mainloop()
 
-    def Exit(self, event: TkEvent):
+    def Exit(self, event: TkEvent = None):
         self.quit()
         self.destroy()
         # sys_exit(0)

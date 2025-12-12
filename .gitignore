@@ -1,6 +1,7 @@
 # exclude
 __pycache__
 tests/*
+.VSCodeCounter
 
 # include
 !tests/CreateTests.py

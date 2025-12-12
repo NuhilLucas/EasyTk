@@ -13,7 +13,8 @@
             //"internalConsole"    调试控制台
             //"integratedTerminal" 调试控制台与内部终端
             //"externalTerminal"   外部终端
-            "cwd": "${fileDirname}",
+            // "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/.venv/Scripts/python.exe"
             },
