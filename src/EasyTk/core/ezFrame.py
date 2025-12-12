@@ -270,7 +270,7 @@ class ezFrameHub(tkFrame):
 
     def unpersist_frame(self, frames: str | Iterable[str]):
         frames_name: Iterable[str] = (frames,) if isinstance(frames, str) else frames
-        
+
         is_redraw: bool = (self.switch_mode == "redraw")
         for frame_name in frames_name:
             if not frame_name in self.frame_reg: continue
